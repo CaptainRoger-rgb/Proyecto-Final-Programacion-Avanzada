@@ -9,35 +9,28 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using MySql.Data.MySqlClient; //Referencia para trabajar en lOCALHOST en Xamp
 
 namespace Garaje_Con_Control_Aruino
 {
     public partial class Form1 : Form
-    {
-        //Lo que se comenta es porque estara para otro codigo 
-        /*public SerialPort serialPort
-        {
-            get;
-        }*/
-        //private SerialPort serialPort;
-
+    {        
         public SerialPort ArduinoPort { get; }
+
+        string conexionSql = "Server=localhost;Port=3306;Database=SERVOMOTOR;Uid=root;Pwd=;";
         public Form1()
         {
-            InitializeComponent();
-            //serialPort = new SerialPort(); // Inicializa el objeto SerialPort en el constructor
-            //ArduinoPort = new System.IO.Ports.SerialPort();
-            //ArduinoPort = new System.IO.Ports.SerialPort();
+            InitializeComponent();            
             ArduinoPort = new SerialPort();
-            ArduinoPort.PortName = "COM7"; //Checar en el equipo
+            ArduinoPort.PortName = "COM6"; //Checar en el equipo
             ArduinoPort.BaudRate = 9600;
             //ArduinoPort.Open();
             ArduinoPort.DataReceived += new SerialDataReceivedEventHandler(DataReceivedHandler);
 
-            this.btnAbrir.Click += btnAbrir_Click;
+            //this.btnAbrir.Click += btnAbrir_Click;
             //this.Load += MainForm_Load;
         }
-        
+
         private void MainForm_Load(object sender, EventArgs e)
         {
             try
@@ -58,6 +51,22 @@ namespace Garaje_Con_Control_Aruino
             lblEstadoPuerta.Text = dato;
         }
 
+        private void InsertarRegistro(string abrir)
+        {
+            using (MySqlConnection conection = new MySqlConnection(conexionSql))
+            {
+                conection.Open();
+
+                string insertQuery = "INSERT INTO REGISTROS (ABRIR)" + "VALUES (@ABRIR)";
+
+                using (MySqlCommand command = new MySqlCommand(insertQuery, conection))
+                {
+                    command.Parameters.AddWithValue("@ABRIR", abrir);
+                    command.ExecuteNonQuery();
+                }
+                conection.Close();
+            }
+        }
 
         private void btnAbrir_Click(object sender, EventArgs e)
         {
@@ -69,10 +78,30 @@ namespace Garaje_Con_Control_Aruino
                 //serialPort.Open();
                 lblEstadoPuerta.Text = "Abierta";
                 ArduinoPort.Close();
+
             }
             catch (Exception ex)
             {
                 MessageBox.Show("Error al enviar el comando: " + ex.Message);
+            }
+            string abrir = btnAbrir.Text;
+            InsertarRegistro(abrir);
+        }
+
+        private void InsertarRegistro2(string cerrar)
+        {
+            using (MySqlConnection conection = new MySqlConnection(conexionSql))
+            {
+                conection.Open();
+
+                string insertQuery = "INSERT INTO REGISTROS (CERRAR)" + "VALUES (@CERRAR)";
+
+                using (MySqlCommand command = new MySqlCommand(insertQuery, conection))
+                {
+                    command.Parameters.AddWithValue("@CERRAR", cerrar);
+                    command.ExecuteNonQuery();
+                }
+                conection.Close();
             }
         }
 
@@ -90,29 +119,40 @@ namespace Garaje_Con_Control_Aruino
             {
                 MessageBox.Show("Error al enviar el comando: " + ex.Message);
             }
+
+            string cerrar = btnCerrar.Text;
+            InsertarRegistro2(cerrar);
+        }
+        private void InsertarRegistro3(string nombre, string fecha)
+        {
+            using (MySqlConnection conection = new MySqlConnection(conexionSql))
+            {
+                conection.Open();
+
+                string insertQuery = "INSERT INTO REGISTROS (NOMBRE, FECHA)" + "VALUES (@NOMBRE, @FECHA)";
+
+                using (MySqlCommand command = new MySqlCommand(insertQuery, conection))
+                {
+                    command.Parameters.AddWithValue("@NOMBRE", nombre);
+                    command.Parameters.AddWithValue("@FECHA", fecha);
+                    command.ExecuteNonQuery();
+                }
+                conection.Close();
+            }
+        }
+        private void btnGuardar_Click(object sender, EventArgs e)
+        {
+            //Obtener los datos en los TexBox 
+            string nombres = txtNombre.Text;
+            string fecha = txtFecha.Text;
+            InsertarRegistro3(nombres, fecha);
+            MessageBox.Show("Datos ingresados Correctamente");
         }
 
-        //Otro Codigo
-        /*private void EnviarComando(string comando)
+        private void btnBorrar_Click(object sender, EventArgs e)
         {
-            try
-            {
-                if (serialPort.IsOpen)
-                    serialPort.Close();
-
-                serialPort.PortName = "COM3"; // Reemplaza con el nombre de tu puerto
-                serialPort.BaudRate = 9600;
-                serialPort.Open();
-
-                // Enviar comando al Arduino
-                serialPort.Write(comando);
-
-                serialPort.Close();
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error al enviar el comando: " + ex.Message);
-            }
-        }*/
+            txtFecha.Clear();
+            txtNombre.Clear();
+        }
     }
 }
